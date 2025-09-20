@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/babaly/221-java-project.git'
+                git branch: 'main', url: ''
             }
         }
 
