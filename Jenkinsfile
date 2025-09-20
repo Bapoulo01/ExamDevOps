@@ -19,7 +19,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def customImage = docker.build("${env.DOCKER_HUB_REPO}:${env.IMAGE_TAG}")
+                    def customImage = bat "docker build --load -t ${env.DOCKER_HUB_REPO}:${env.IMAGE_TAG} ."
                 }
             }
         }
