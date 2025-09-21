@@ -55,22 +55,24 @@ pipeline {
         stage('Deploy to Render') {
             steps {
                 script {
-                    // ✅ VOS VRAIES VALEURS
-                    def apiKey = "rnd_bygkZpY5Gf73redc5mQEHt8WQvyy"
-                    def serviceId = "srv-d37b997fte5s73b4lgjg"
+                    // Définir le nom de l'image avec le numéro de build
+                    def dockerImage = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    echo "🚀 Déploiement de: ${dockerImage}"
                     
-                    powershell """
-                        Invoke-RestMethod `
-                            -Uri "https://api.render.com/v1/services/${serviceId}/deploys" `
-                            -Method Post `
-                            -Headers @{ 
-                                'Accept' = 'application/json'
-                                'Authorization' = "Bearer ${apiKey}"
-                            } `
-                            -Body "{ \\\"dockerImage\\\": \\\"${IMAGE_NAME}:${env.BUILD_NUMBER}\\\" }" `
-                            -ContentType 'application/json'
+                    // Utilisation de BAT pour Windows (plus fiable)
+                    bat """
+                        curl -X POST ^
+                        "https://api.render.com/v1/services/srv-d37b997fte5s73b4lgjg/deploys" ^
+                        -H "Authorization: Bearer rnd_bygkZpY5Gf73redc5mQEHt8WQvyy" ^
+                        -H "Content-Type: application/json" ^
+                        -d "{ \\"dockerImage\\": \\"${dockerImage}\\" }"
                         
-                        echo "✅ Déploiement Render réussi"
+                        if %errorlevel% equ 0 (
+                            echo ✅ Déploiement Render réussi
+                        ) else (
+                            echo ❌ Erreur lors du déploiement
+                            exit 1
+                        )
                     """
                 }
             }
