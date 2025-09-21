@@ -1,12 +1,14 @@
-# Étape 1 : build Maven
-FROM maven:3.9-eclipse-temurin-17 AS builder
-WORKDIR /build
-COPY . .
-RUN mvn clean package -DskipTests
+# Étape 1 : Utiliser une image OpenJDK 11
+FROM openjdk:11-jre-slim
 
-# Étape 2 : image definitive
-FROM openjdk:17-jdk-slim
+# Étape 2 : Créer un dossier dans le conteneur
 WORKDIR /app
-COPY --from=builder /build/target/*.jar app.jar
-EXPOSE 8083
+
+# Étape 3 : Copier le .jar dans le conteneur
+COPY target/demo-0.0.1-SNAPSHOT.jar app.jar
+
+# Étape 4 : Exposer le port
+EXPOSE 8070
+
+# Étape 5 : Commande de démarrage
 ENTRYPOINT ["java", "-jar", "app.jar"]

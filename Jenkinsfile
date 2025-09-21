@@ -1,36 +1,52 @@
 pipeline {
-    agent any  
+    agent any
 
     environment {
-        DOCKER_HUB_REPO = 'ahma98/exam-devops'
-        IMAGE_TAG = "latest" 
+        DOCKERHUB_CREDENTIALS = 'docker-credentials'
+        IMAGE_NAME = 'ahma98/exam-devops'
+        IMAGE_TAG = 'latest'
+        RENDER_API_KEY = credentials('render-credentials')
         RENDER_SERVICE_ID = 'srv-d37b997fte5s73b4lgjg'
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                checkout scm 
+                git branch: 'main', url: 'https://github.com/Bapoulo01/ExamDevOps.git'
             }
         }
 
-      
-
-        stage('Build Docker Image') {
+        stage('Test Maven') {
             steps {
-                script {
-                    def customImage = bat "docker build --load -t ${env.DOCKER_HUB_REPO}:${env.IMAGE_TAG} ."
+                bat 'mvn test'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Build & Package') {
+            steps {
+                bat 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Build Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub_credential') {
-                        def image = docker.image("${env.DOCKER_HUB_REPO}:${env.IMAGE_TAG}")
-                        image.push()
-                        image.push('latest') 
+                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}", "--pull .")
+                }
+            }
+        }
+
+        stage('Push Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKERHUB_CREDENTIALS) {
+                        docker.image("${IMAGE_NAME}:${IMAGE_TAG}").push()
                     }
                 }
             }
@@ -38,27 +54,28 @@ pipeline {
 
         stage('Deploy to Render') {
             steps {
+                echo "Déploiement sur Render via Docker..."
                 script {
-                    sh """
+                    retry(3) {
+                        sh '''
                         curl -X POST \
-                            -H "Authorization: Bearer \${render_api}" \
-                            -H "Content-Type: application/json" \
-                            https://api.render.com/v1/services/\${RENDER_SERVICE_ID}/deploys
-                    """
+                          -H "Accept: application/json" \
+                          -H "Authorization: Bearer ${RENDER_API_KEY}" \
+                          -d '{ "dockerImage": "${IMAGE_NAME}:${IMAGE_TAG}" }' \
+                          https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys
+                        '''
+                    }
                 }
             }
         }
     }
 
     post {
-        always {
-            sh script: 'docker rmi ${DOCKER_HUB_REPO}:${IMAGE_TAG} || true'
+        failure {
+            echo '❌ Build, test ou déploiement échoué'
         }
         success {
-            echo 'Pipeline réussi ! Image pushée et déployée sur Render.'
-        }
-        failure {
-            echo 'Pipeline échoué. Vérifiez les logs.'
-        }
-    }
+            echo '✅ Build, push Docker et déploiement Render terminés'
+        }
+    }
 }
