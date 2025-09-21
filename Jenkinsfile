@@ -56,17 +56,39 @@ pipeline {
             steps {
                 echo "Déploiement sur Render via Docker..."
                 script {
+                    def imageName = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    echo "Image à déployer: ${imageName}"
+                    
                     withCredentials([
-                        string(credentialsId: 'RENDER_API_KEY', variable: 'RENDER_API_KEY'),
-                        string(credentialsId: 'RENDER_SERVICE_ID', variable: 'RENDER_SERVICE_ID')
+                        string(credentialsId: 'render-api-key', variable: 'RENDER_API_KEY'),
+                        string(credentialsId: 'render-service-id', variable: 'RENDER_SERVICE_ID')
                     ]) {
                         retry(3) {
-                            bat """
-                                curl -X POST ^
-                                    -H "Accept: application/json" ^
-                                    -H "Authorization: Bearer %RENDER_API_KEY%" ^
-                                    -d "{ \\"dockerImage\\": \\"${env.DOCKER_IMAGE}:${env.BUILD_NUMBER}\\" }" ^
-                                    "https://api.render.com/v1/services/%RENDER_SERVICE_ID%/deploys"
+                            powershell """
+                                `$body = @{
+                                    dockerImage = "${imageName}"
+                                } | ConvertTo-Json
+                                
+                                `$headers = @{
+                                    'Accept' = 'application/json'
+                                    'Authorization' = "Bearer `$env:RENDER_API_KEY"
+                                }
+                                
+                                try {
+                                    `$response = Invoke-RestMethod `
+                                        -Uri "https://api.render.com/v1/services/`$env:RENDER_SERVICE_ID/deploys" `
+                                        -Method Post `
+                                        -Headers `$headers `
+                                        -Body `$body `
+                                        -ContentType 'application/json'
+                                    
+                                    Write-Host "✅ Déploiement Render réussi!"
+                                    Write-Host "ID du déploiement: `$(`$response.id)"
+                                }
+                                catch {
+                                    Write-Host "❌ Erreur Render: `$(`$_.Exception.Message)"
+                                    exit 1
+                                }
                             """
                         }
                     }
