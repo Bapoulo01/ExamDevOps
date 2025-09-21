@@ -57,7 +57,7 @@ pipeline {
                 echo "Déploiement sur Render via Docker..."
                 script {
                     retry(3) {
-                        sh '''
+                        bat '''
                         curl -X POST \
                           -H "Accept: application/json" \
                           -H "Authorization: Bearer ${RENDER_API_KEY}" \
