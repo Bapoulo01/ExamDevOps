@@ -56,14 +56,19 @@ pipeline {
             steps {
                 echo "Déploiement sur Render via Docker..."
                 script {
-                    retry(3) {
-                        bat '''
-                        curl -X POST \
-                          -H "Accept: application/json" \
-                          -H "Authorization: Bearer ${RENDER_API_KEY}" \
-                          -d '{ "dockerImage": "${IMAGE_NAME}:${IMAGE_TAG}" }' \
-                          https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys
-                        '''
+                    withCredentials([
+                        string(credentialsId: 'RENDER_API_KEY', variable: 'RENDER_API_KEY'),
+                        string(credentialsId: 'RENDER_SERVICE_ID', variable: 'RENDER_SERVICE_ID')
+                    ]) {
+                        retry(3) {
+                            bat """
+                                curl -X POST ^
+                                    -H "Accept: application/json" ^
+                                    -H "Authorization: Bearer %RENDER_API_KEY%" ^
+                                    -d "{ \\"dockerImage\\": \\"${env.DOCKER_IMAGE}:${env.BUILD_NUMBER}\\" }" ^
+                                    "https://api.render.com/v1/services/%RENDER_SERVICE_ID%/deploys"
+                            """
+                        }
                     }
                 }
             }
