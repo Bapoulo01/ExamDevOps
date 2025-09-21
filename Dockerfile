@@ -8,7 +8,7 @@ WORKDIR /app
 COPY target/demo-0.0.1-SNAPSHOT.jar app.jar
 
 # Étape 4 : Exposer le port
-EXPOSE 8070
+EXPOSE 8080
 
 # Étape 5 : Commande de démarrage
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
