@@ -76,6 +76,6 @@ pipeline {
         }
         success {
             echo '✅ Build, push Docker et déploiement Render terminés'
-        }
-    }
+        }
+    }
 }
