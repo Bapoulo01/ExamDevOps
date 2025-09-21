@@ -54,25 +54,23 @@ pipeline {
 
         stage('Deploy to Render') {
             steps {
-                echo "🚀 Déploiement sur Render..."
                 script {
-                    // ⚠️ REMPLACEZ PAR VOS VRAIES VALEURS
+                    // ✅ VOS VRAIES VALEURS
                     def apiKey = "rnd_bygkZpY5Gf73redc5mQEHt8WQvyy"
                     def serviceId = "srv-d37b997fte5s73b4lgjg"
-                    def imageName = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     
                     powershell """
-                        `$response = Invoke-RestMethod `
+                        Invoke-RestMethod `
                             -Uri "https://api.render.com/v1/services/${serviceId}/deploys" `
                             -Method Post `
                             -Headers @{ 
                                 'Accept' = 'application/json'
                                 'Authorization' = "Bearer ${apiKey}"
                             } `
-                            -Body "{ \\\"dockerImage\\\": \\\"${imageName}\\\" }" `
+                            -Body "{ \\\"dockerImage\\\": \\\"${IMAGE_NAME}:${env.BUILD_NUMBER}\\\" }" `
                             -ContentType 'application/json'
                         
-                        echo "✅ Déploiement réussi"
+                        echo "✅ Déploiement Render réussi"
                     """
                 }
             }
